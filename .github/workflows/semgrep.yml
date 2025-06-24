@@ -27,20 +27,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          semgrep ci --sarif-output=results.sarif
+          semgrep ci --sarif-output=results.json
       
       - name: Add SCW Training
         uses: SecureCodeWarrior/github-action-add-sarif-contextual-training@v1
         if: always()
         with:
-          inputSarifFile: ./results.sarif
+          inputSarifFile: ./results.json
           outputSarifFile: ./processed-sarifs
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: DBG only
         if: always()
         run: |
-          ls -lrt ./sarifs
+          ls -lrt
           ls -lrt ./processed-sarifs
           
       - name: Upload SARIF file
