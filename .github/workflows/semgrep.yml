@@ -42,8 +42,8 @@ jobs:
           ls -lrt
           ls -lrt ./processed-sarifs
           
-      - name: Upload SARIF file
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          path: ./results.json
+          sarif_file: ./results.json
+
