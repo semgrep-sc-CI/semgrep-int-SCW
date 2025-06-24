@@ -1,55 +1,39 @@
-name: Polaris [SAST, SCA]
-
 on:
+  workflow_dispatch: {}
+  pull_request: {}
   push:
-    branches: [ main, master, develop, stage, release ]
-  pull_request:
-    branches: [ main, master, develop, stage, release ]
-  workflow_dispatch:
+    branches:
+    - main
+    - master
+    paths:
+    - .github/workflows/semgrep.yml
   schedule:
-    - cron: '0 0 * * SUN'
+  # random HH:MM to avoid a load spike on GitHub Actions at 00:00
+  - cron: 48 1 * * *
+  
+name: Semgrep
+jobs:
+  semgrep:
+    name: semgrep/ci
+    runs-on: ubuntu-latest
+    env:
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+    container:
+      image: semgrep/semgrep
 
-jobs:      
-  build:
-    runs-on: ubuntu-latest    
+    # Skip any PR created by dependabot to avoid permission issues:
+    if: (github.actor != 'dependabot[bot]')
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: install npm
-        uses: actions/setup-node@v4
-        with:
-          cache: 'npm'
-          
-      - name: install dependency
-        run: |
-          npm install --no-audit --no-fund --silent
-          mkdir ./sarifs
-          mkdir ./processed-sarifs
-          
-      - name: Polaris Scan
-        uses: blackduck-inc/black-duck-security-scan@v2.0.0
-        with:
-          ### SCANNING: Required fields
-          polaris_server_url: ${{ secrets.POLARIS_SERVER_URL }}
-          polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-          polaris_assessment_types: "SCA,SAST"
-          polaris_prComment_enabled: true
-          polaris_prComment_severities: "high,critical,medium,low"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          polaris_test_sca_type: "SCA-SIGNATURE"
-
-          ### SARIF report generation and upload to GitHub Adavanced Security Tab
-          polaris_reports_sarif_create: true
-          polaris_reports_sarif_groupSCAIssues: true
-          polaris_upload_sarif_report: true
-          polaris_reports_sarif_file_path: './sarifs/report.sarif.json'
-
+      - uses: actions/checkout@v4
+      - run: |
+          semgrep ci --sarif-output=results.sarif
+      
       - name: Add SCW Training
         uses: SecureCodeWarrior/github-action-add-sarif-contextual-training@v1
         if: always()
         with:
-          inputSarifFile: ./sarifs/*.json
+          inputSarifFile: ./results.sarif
           outputSarifFile: ./processed-sarifs
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
