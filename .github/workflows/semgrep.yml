@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          semgrep ci --sarif-output=results.json
+          semgrep ci --code --sarif-output=results.json
       
       - name: Add SCW Training
         uses: SecureCodeWarrior/github-action-add-sarif-contextual-training@v1
